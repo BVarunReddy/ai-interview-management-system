@@ -1,0 +1,20 @@
+RANDOM FOREST MODEL — ACCURACY REPORT
+==========================================
+Model       : Random Forest Classifier
+Task        : Candidate Selection Prediction
+Dataset     : recruitment_dataset.csv
+Samples     : 100 total (80 train, 20 test)
+Features    : ['years_experience', 'technical_score', 'communication_score', 'problem_solving_score', 'num_interviews', 'education_level', 'previous_companies', 'skills_count']
+
+PERFORMANCE METRICS
+-------------------
+Accuracy    : 100.00%
+Precision   : 100.00%
+Recall      : 100.00%
+F1-Score    : 100.00%
+
+OUTPUT CLASSES
+--------------
+Highly Likely      : probability >= 70%
+Moderately Likely  : probability 40-69%
+Low Probability    : probability < 40%

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — InterviewPro</title>
+  <link rel="stylesheet" href="css/app.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="sidebar" id="sidebar"></div>
+<div class="main">
+  <div class="navbar" id="navbar"></div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p>Welcome back, <span id="welcomeName">—</span>. Here's what's happening today.</p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-icon indigo"><i class="fa fa-users"></i></div><div class="stat-value skeleton" style="width:60px;height:36px;border-radius:6px"></div><div class="stat-label">Total Candidates</div></div>
+      <div class="stat-card"><div class="stat-icon green"><i class="fa fa-check-circle"></i></div><div class="stat-value skeleton" style="width:60px;height:36px;border-radius:6px"></div><div class="stat-label">Selected</div></div>
+      <div class="stat-card"><div class="stat-icon amber"><i class="fa fa-calendar-alt"></i></div><div class="stat-value skeleton" style="width:60px;height:36px;border-radius:6px"></div><div class="stat-label">Interviews Scheduled</div></div>
+      <div class="stat-card"><div class="stat-icon blue"><i class="fa fa-comment-alt"></i></div><div class="stat-value skeleton" style="width:60px;height:36px;border-radius:6px"></div><div class="stat-label">Feedback Submitted</div></div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="dash-grid">
+      <!-- Chart -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Hiring Trend</div>
+            <div class="card-subtitle">Candidates added over last 6 months</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div>
+        <!-- Pipeline summary -->
+        <div class="card mb-4" style="margin-bottom:16px">
+          <div class="card-header">
+            <div class="card-title">Pipeline Summary</div>
+          </div>
+          <div id="pipelineSummary">
+            <div class="skeleton skeleton-text mb-2"></div>
+            <div class="skeleton skeleton-text mb-2"></div>
+            <div class="skeleton skeleton-text"></div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Recent Activity</div>
+          </div>
+          <div id="activityFeed">
+            <div class="skeleton skeleton-row"></div>
+            <div class="skeleton skeleton-row"></div>
+            <div class="skeleton skeleton-row"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="dash-grid-3" style="margin-top:20px">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Candidate Status Breakdown</div></div>
+        <div class="chart-container" style="height:200px">
+          <canvas id="statusChart"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Interview Rounds</div></div>
+        <div class="chart-container" style="height:200px">
+          <canvas id="roundChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
