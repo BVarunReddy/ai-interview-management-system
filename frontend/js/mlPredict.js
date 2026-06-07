@@ -46,7 +46,7 @@ async function runPrediction() {
   document.getElementById("predCard").className = "pred-card";
   document.getElementById("thinkingPanel").style.display = "block";
 
-  const res = await fetch(`http://localhost:3000/api/ml/predict`, {
+  const res = await fetch(`https://ai-interview-management-system-production.up.railway.app/api/ml/predict`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -90,7 +90,7 @@ function showResult(d) {
 }
 
 async function loadHistory() {
-  const res = await fetch(`http://localhost:3000/api/ml/predictions`, {
+  const res = await fetch(`https://ai-interview-management-system-production.up.railway.app/api/ml/predictions`, {
     headers: { "Authorization": `Bearer ${Auth.getToken()}` }
   });
   const data = await res.json();

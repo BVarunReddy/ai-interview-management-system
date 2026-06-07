@@ -181,7 +181,7 @@ function initUI(activePage, searchPlaceholder) {
 // ── Fetch notification count ──────────────────────────────
 async function fetchNotifCount() {
   try {
-    const res = await fetch("http://localhost:3000/api/notifications", {
+    const res = await fetch("https://ai-interview-management-system-production.up.railway.app/api/notifications", {
       headers: { Authorization: `Bearer ${Auth.getToken()}` },
     });
     const data = await res.json();
@@ -202,7 +202,7 @@ async function fetchNotifCount() {
 // ── Load notifications into dropdown ─────────────────────
 async function loadNotifications() {
   try {
-    const res = await fetch("http://localhost:3000/api/notifications", {
+    const res = await fetch("https://ai-interview-management-system-production.up.railway.app/api/notifications", {
       headers: { Authorization: `Bearer ${Auth.getToken()}` },
     });
     const data = await res.json();
@@ -260,7 +260,7 @@ async function loadNotifications() {
 // ── Mark one as read ──────────────────────────────────────
 async function markRead(id, el) {
   try {
-    await fetch(`http://localhost:3000/api/notifications/${id}/read`, {
+    await fetch(`https://ai-interview-management-system-production.up.railway.app/api/notifications/${id}/read`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${Auth.getToken()}` },
     });
@@ -272,7 +272,7 @@ async function markRead(id, el) {
 // ── Clear all ─────────────────────────────────────────────
 async function clearAllNotifs() {
   try {
-    await fetch("http://localhost:3000/api/notifications/clear", {
+    await fetch("https://ai-interview-management-system-production.up.railway.app/api/notifications/clear", {
       method: "DELETE",
       headers: { Authorization: `Bearer ${Auth.getToken()}` },
     });
