@@ -2,7 +2,7 @@
 // api.js — Centralized API Client with JWT Auth
 // ============================================================
 
-const API_BASE = "http://localhost:3000/api";
+const API_BASE = "ai-interview-management-system-production.up.railway.app/api";
 
 // ── Token helpers ─────────────────────────────────────────
 const Auth = {
