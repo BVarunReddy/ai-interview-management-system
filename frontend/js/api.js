@@ -7,7 +7,7 @@ const API_BASE = "ai-interview-management-system-production.up.railway.app/api";
 // ── Token helpers ─────────────────────────────────────────
 const Auth = {
   getToken: () => localStorage.getItem("ats_token"),
-  getUser:  () => JSON.parse(localStorage.getItem("ats_user") || "null"),
+  getUser: () => JSON.parse(localStorage.getItem("ats_user") || "null"),
   setSession: (token, user) => {
     localStorage.setItem("ats_token", token);
     localStorage.setItem("ats_user", JSON.stringify(user));
@@ -23,7 +23,7 @@ const Auth = {
       return false;
     }
     return true;
-  }
+  },
 };
 
 // ── Core fetch wrapper ────────────────────────────────────
@@ -49,45 +49,65 @@ async function apiFetch(endpoint, options = {}) {
     return { ok: res.ok, status: res.status, data };
   } catch (err) {
     console.error("API error:", err);
-    return { ok: false, data: { message: "Network error. Is the server running?" } };
+    return {
+      ok: false,
+      data: { message: "Network error. Is the server running?" },
+    };
   }
 }
 
 // ── API methods ───────────────────────────────────────────
 const API = {
   // Auth
-  login:    (body)       => apiFetch("/auth/login",   { method: "POST", body: JSON.stringify(body) }),
-  register: (body)       => apiFetch("/auth/register",{ method: "POST", body: JSON.stringify(body) }),
-  getProfile: ()         => apiFetch("/auth/profile"),
-  updateProfile: (body)  => apiFetch("/auth/profile", { method: "PUT", body: JSON.stringify(body) }),
+  login: (body) =>
+    apiFetch("/auth/login", { method: "POST", body: JSON.stringify(body) }),
+  register: (body) =>
+    apiFetch("/auth/register", { method: "POST", body: JSON.stringify(body) }),
+  getProfile: () => apiFetch("/auth/profile"),
+  updateProfile: (body) =>
+    apiFetch("/auth/profile", { method: "PUT", body: JSON.stringify(body) }),
 
   // Dashboard
-  getStats:    ()        => apiFetch("/dashboard/stats"),
-  getActivity: ()        => apiFetch("/dashboard/activity"),
+  getStats: () => apiFetch("/dashboard/stats"),
+  getActivity: () => apiFetch("/dashboard/activity"),
 
   // Candidates
   getCandidates: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return apiFetch(`/candidates${qs ? "?" + qs : ""}`);
   },
-  getCandidate:    (id)  => apiFetch(`/candidates/${id}`),
-  addCandidate:    (fd)  => apiFetch("/candidates", { method: "POST", body: fd }),
-  updateStatus:    (id, status) => apiFetch(`/candidates/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) }),
-  deleteCandidate: (id)  => apiFetch(`/candidates/${id}`, { method: "DELETE" }),
+  getCandidate: (id) => apiFetch(`/candidates/${id}`),
+  addCandidate: (fd) => apiFetch("/candidates", { method: "POST", body: fd }),
+  updateStatus: (id, status) =>
+    apiFetch(`/candidates/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    }),
+  deleteCandidate: (id) => apiFetch(`/candidates/${id}`, { method: "DELETE" }),
 
   // Interviews
-  getInterviews:  (params = {}) => {
+  getInterviews: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return apiFetch(`/interviews${qs ? "?" + qs : ""}`);
   },
-  scheduleInterview: (body) => apiFetch("/interviews", { method: "POST", body: JSON.stringify(body) }),
-  updateInterviewStatus: (id, status) => apiFetch(`/interviews/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) }),
+  scheduleInterview: (body) =>
+    apiFetch("/interviews", { method: "POST", body: JSON.stringify(body) }),
+  updateInterviewStatus: (id, status) =>
+    apiFetch(`/interviews/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    }),
   deleteInterview: (id) => apiFetch(`/interviews/${id}`, { method: "DELETE" }),
 
   // Feedback
-  getFeedback:    ()     => apiFetch("/feedback"),
-  submitFeedback: (body) => apiFetch("/feedback", { method: "POST", body: JSON.stringify(body) }),
+  getFeedback: () => apiFetch("/feedback"),
+  submitFeedback: (body) =>
+    apiFetch("/feedback", { method: "POST", body: JSON.stringify(body) }),
 
   // AI
-  scoreResume: (body)    => apiFetch("/ai/score-resume", { method: "POST", body: JSON.stringify(body) }),
+  scoreResume: (body) =>
+    apiFetch("/ai/score-resume", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
