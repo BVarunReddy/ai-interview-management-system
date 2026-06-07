@@ -12,12 +12,12 @@ router.get("/", async (req, res) => {
       `SELECT * FROM notifications
        WHERE user_id = ? OR user_id IS NULL
        ORDER BY created_at DESC LIMIT 20`,
-      [req.user.id]
+      [req.user.id],
     );
     const [[{ unread }]] = await db.query(
       `SELECT COUNT(*) AS unread FROM notifications
        WHERE is_read = 0 AND (user_id = ? OR user_id IS NULL)`,
-      [req.user.id]
+      [req.user.id],
     );
     res.json({ success: true, notifications: rows, unread });
   } catch (err) {
@@ -32,7 +32,7 @@ router.put("/read-all", async (req, res) => {
     await db.query(
       `UPDATE notifications SET is_read = 1
        WHERE (user_id = ? OR user_id IS NULL) AND is_read = 0`,
-      [req.user.id]
+      [req.user.id],
     );
     res.json({ success: true });
   } catch (err) {
@@ -43,7 +43,9 @@ router.put("/read-all", async (req, res) => {
 // ─── MARK ONE AS READ ─────────────────────────────────────
 router.put("/:id/read", async (req, res) => {
   try {
-    await db.query("UPDATE notifications SET is_read = 1 WHERE id = ?", [req.params.id]);
+    await db.query("UPDATE notifications SET is_read = 1 WHERE id = ?", [
+      req.params.id,
+    ]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -55,7 +57,7 @@ router.delete("/clear", async (req, res) => {
   try {
     await db.query(
       "DELETE FROM notifications WHERE user_id = ? OR user_id IS NULL",
-      [req.user.id]
+      [req.user.id],
     );
     res.json({ success: true });
   } catch (err) {
@@ -69,7 +71,7 @@ router.post("/", async (req, res) => {
     const { title, message, type, user_id } = req.body;
     await db.query(
       `INSERT INTO notifications (title, message, type, user_id) VALUES (?, ?, ?, ?)`,
-      [title, message, type || "info", user_id || null]
+      [title, message, type || "info", user_id || null],
     );
     res.status(201).json({ success: true });
   } catch (err) {

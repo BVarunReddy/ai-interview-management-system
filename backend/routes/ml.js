@@ -18,8 +18,12 @@ function runPythonPredictor(features) {
     let output = "";
     let error = "";
 
-    py.stdout.on("data", (data) => { output += data.toString(); });
-    py.stderr.on("data", (data) => { error += data.toString(); });
+    py.stdout.on("data", (data) => {
+      output += data.toString();
+    });
+    py.stderr.on("data", (data) => {
+      error += data.toString();
+    });
 
     py.on("close", (code) => {
       if (code !== 0) {
@@ -42,23 +46,26 @@ router.post("/predict", async (req, res) => {
     const { candidate_id } = req.body;
 
     if (!candidate_id) {
-      return res.status(400).json({ success: false, message: "candidate_id is required." });
+      return res
+        .status(400)
+        .json({ success: false, message: "candidate_id is required." });
     }
 
     // Fetch candidate
-    const [rows] = await db.query(
-      "SELECT * FROM candidates WHERE id = ?",
-      [candidate_id]
-    );
+    const [rows] = await db.query("SELECT * FROM candidates WHERE id = ?", [
+      candidate_id,
+    ]);
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Candidate not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "Candidate not found." });
     }
     const c = rows[0];
 
     // Fetch their feedback (for scores)
     const [feedbacks] = await db.query(
       "SELECT * FROM feedback WHERE candidate_id = ? ORDER BY created_at DESC LIMIT 1",
-      [candidate_id]
+      [candidate_id],
     );
 
     const fb = feedbacks[0] || {};
@@ -72,10 +79,10 @@ router.post("/predict", async (req, res) => {
       parseInt(fb.technical_score) || 5,
       parseInt(fb.communication_score) || 5,
       parseInt(fb.problem_solving_score) || 5,
-      feedbacks.length > 0 ? 2 : 1,   // num_interviews proxy
-      3,                                // education_level default (Bachelor's)
+      feedbacks.length > 0 ? 2 : 1, // num_interviews proxy
+      3, // education_level default (Bachelor's)
       Math.min(Math.floor((parseInt(c.experience) || 0) / 2), 4), // prev_companies estimate
-      (c.skills || "").split(",").filter(Boolean).length || 3,     // skills_count
+      (c.skills || "").split(",").filter(Boolean).length || 3, // skills_count
     ];
 
     // Call Python ML script
@@ -84,7 +91,7 @@ router.post("/predict", async (req, res) => {
     // Save prediction to DB
     await db.query(
       "UPDATE candidates SET ml_prediction = ?, ml_probability = ? WHERE id = ?",
-      [prediction.label, prediction.probability, candidate_id]
+      [prediction.label, prediction.probability, candidate_id],
     );
 
     res.json({ success: true, candidate_name: c.name, ...prediction });
@@ -94,7 +101,9 @@ router.post("/predict", async (req, res) => {
     // Fallback: use rule-based prediction if Python not available
     res.status(500).json({
       success: false,
-      message: "ML prediction failed. Make sure Python and the model are set up. Error: " + err.message,
+      message:
+        "ML prediction failed. Make sure Python and the model are set up. Error: " +
+        err.message,
     });
   }
 });
@@ -106,7 +115,7 @@ router.get("/predictions", async (req, res) => {
       `SELECT id, name, position, experience, ai_score, ml_prediction, ml_probability, status
        FROM candidates
        WHERE ml_prediction IS NOT NULL
-       ORDER BY ml_probability DESC`
+       ORDER BY ml_probability DESC`,
     );
     res.json({ success: true, predictions: rows });
   } catch (err) {

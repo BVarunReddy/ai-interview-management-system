@@ -70,11 +70,11 @@ router.get("/activity", async (req, res) => {
   try {
     const [candidates] = await db.query(
       `SELECT 'candidate' AS type, name AS title, status, created_at
-       FROM candidates ORDER BY created_at DESC LIMIT 5`
+       FROM candidates ORDER BY created_at DESC LIMIT 5`,
     );
     const [interviews] = await db.query(
       `SELECT 'interview' AS type, candidate_name AS title, round_name AS status, created_at
-       FROM interviews ORDER BY created_at DESC LIMIT 5`
+       FROM interviews ORDER BY created_at DESC LIMIT 5`,
     );
 
     const activity = [...candidates, ...interviews]

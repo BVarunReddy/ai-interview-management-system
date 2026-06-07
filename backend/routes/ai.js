@@ -5,52 +5,105 @@ const db = require("../db");
 
 router.use(authMiddleware);
 
-// ─── FREE LOCAL AI SCORING ENGINE ──────────────────────────
-// No API key needed — smart keyword + experience matching
 
 function scoreResume(candidate, jobDescription) {
   const jd = jobDescription.toLowerCase();
-  const candidateSkills = (candidate.skills || "").toLowerCase().split(/[,\s]+/).filter(Boolean);
+  const candidateSkills = (candidate.skills || "")
+    .toLowerCase()
+    .split(/[,\s]+/)
+    .filter(Boolean);
   const candidatePosition = (candidate.position || "").toLowerCase();
   const candidateExp = parseInt(candidate.experience) || 0;
 
   // ── 1. Skills match (50 points) ──────────────────────────
   const techKeywords = [
-    "javascript","python","java","react","node","express","mysql","mongodb",
-    "html","css","angular","vue","typescript","php","sql","git","docker",
-    "aws","rest","api","redux","bootstrap","tailwind","figma","linux",
-    "c++","c#","kotlin","swift","flutter","django","spring","laravel",
-    "postgresql","firebase","graphql","sass","webpack","jest","mocha",
-    "kubernetes","jenkins","ci/cd","agile","scrum","excel","powerpoint",
-    "machine learning","deep learning","tensorflow","pytorch","pandas",
-    "numpy","r","tableau","power bi","selenium","postman","jira"
+    "javascript",
+    "python",
+    "java",
+    "react",
+    "node",
+    "express",
+    "mysql",
+    "mongodb",
+    "html",
+    "css",
+    "angular",
+    "vue",
+    "typescript",
+    "php",
+    "sql",
+    "git",
+    "docker",
+    "aws",
+    "rest",
+    "api",
+    "redux",
+    "bootstrap",
+    "tailwind",
+    "figma",
+    "linux",
+    "c++",
+    "c#",
+    "kotlin",
+    "swift",
+    "flutter",
+    "django",
+    "spring",
+    "laravel",
+    "postgresql",
+    "firebase",
+    "graphql",
+    "sass",
+    "webpack",
+    "jest",
+    "mocha",
+    "kubernetes",
+    "jenkins",
+    "ci/cd",
+    "agile",
+    "scrum",
+    "excel",
+    "powerpoint",
+    "machine learning",
+    "deep learning",
+    "tensorflow",
+    "pytorch",
+    "pandas",
+    "numpy",
+    "r",
+    "tableau",
+    "power bi",
+    "selenium",
+    "postman",
+    "jira",
   ];
 
   // Extract skills mentioned in JD
-  const jdSkills = techKeywords.filter(k => jd.includes(k));
+  const jdSkills = techKeywords.filter((k) => jd.includes(k));
 
   let matchedSkills = [];
   let missingSkills = [];
 
-  jdSkills.forEach(skill => {
-    const candidateHasIt = candidateSkills.some(cs =>
-      cs.includes(skill) || skill.includes(cs)
-    ) || (candidate.skills || "").toLowerCase().includes(skill);
+  jdSkills.forEach((skill) => {
+    const candidateHasIt =
+      candidateSkills.some((cs) => cs.includes(skill) || skill.includes(cs)) ||
+      (candidate.skills || "").toLowerCase().includes(skill);
 
     if (candidateHasIt) matchedSkills.push(skill);
     else missingSkills.push(skill);
   });
 
-  const skillScore = jdSkills.length > 0
-    ? Math.round((matchedSkills.length / jdSkills.length) * 50)
-    : 25; // neutral if JD has no detectable skills
+  const skillScore =
+    jdSkills.length > 0
+      ? Math.round((matchedSkills.length / jdSkills.length) * 50)
+      : 25; // neutral if JD has no detectable skills
 
   // ── 2. Experience match (25 points) ─────────────────────
   // Extract required years from JD
   const expMatches = jd.match(/(\d+)\+?\s*years?/g) || [];
   let requiredExp = 0;
   if (expMatches.length > 0) {
-    const nums = expMatches.map(m => parseInt(m));
+    const nums = expMatches.map((m) => parseInt(m));
     requiredExp = Math.min(...nums); // use minimum requirement
   }
 
@@ -69,48 +122,80 @@ function scoreResume(candidate, jobDescription) {
 
   // ── 3. Position/title match (15 points) ─────────────────
   const titleKeywords = candidatePosition.split(/\s+/);
-  const titleMatches = titleKeywords.filter(word =>
-    word.length > 3 && jd.includes(word)
+  const titleMatches = titleKeywords.filter(
+    (word) => word.length > 3 && jd.includes(word),
   );
-  const titleScore = titleMatches.length > 0
-    ? Math.min(15, titleMatches.length * 6)
-    : (jd.includes("developer") && candidatePosition.includes("developer") ? 8 : 4);
+  const titleScore =
+    titleMatches.length > 0
+      ? Math.min(15, titleMatches.length * 6)
+      : jd.includes("developer") && candidatePosition.includes("developer")
+        ? 8
+        : 4;
 
   // ── 4. Soft skills / keywords bonus (10 points) ──────────
   const softKeywords = [
-    "communication","teamwork","leadership","problem solving","analytical",
-    "detail","organized","initiative","collaborative","creative","adaptable"
+    "communication",
+    "teamwork",
+    "leadership",
+    "problem solving",
+    "analytical",
+    "detail",
+    "organized",
+    "initiative",
+    "collaborative",
+    "creative",
+    "adaptable",
   ];
-  const softMatches = softKeywords.filter(k =>
-    jd.includes(k) && (candidate.skills || "").toLowerCase().includes(k)
+  const softMatches = softKeywords.filter(
+    (k) => jd.includes(k) && (candidate.skills || "").toLowerCase().includes(k),
   );
   const softScore = Math.min(10, softMatches.length * 3 + 3);
 
   // ── Final score ──────────────────────────────────────────
-  const totalScore = Math.min(100, skillScore + expScore + titleScore + softScore);
+  const totalScore = Math.min(
+    100,
+    skillScore + expScore + titleScore + softScore,
+  );
 
   // ── Strengths (matched skills + experience) ──────────────
   const strengths = [];
   if (matchedSkills.length > 0) {
-    strengths.push(`Proficient in ${matchedSkills.slice(0,3).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}`);
+    strengths.push(
+      `Proficient in ${matchedSkills
+        .slice(0, 3)
+        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+        .join(", ")}`,
+    );
   }
   if (candidateExp >= requiredExp && requiredExp > 0) {
-    strengths.push(`${candidateExp} years of experience meets the ${requiredExp}+ year requirement`);
+    strengths.push(
+      `${candidateExp} years of experience meets the ${requiredExp}+ year requirement`,
+    );
   } else if (candidateExp > 0) {
-    strengths.push(`${candidateExp} year${candidateExp !== 1 ? "s" : ""} of relevant experience`);
+    strengths.push(
+      `${candidateExp} year${candidateExp !== 1 ? "s" : ""} of relevant experience`,
+    );
   }
   if (titleMatches.length > 0) {
     strengths.push(`Role title aligns with job requirements`);
   }
-  if (strengths.length === 0) strengths.push("Has foundational background in the domain");
+  if (strengths.length === 0)
+    strengths.push("Has foundational background in the domain");
 
   // ── Gaps (missing skills + experience) ───────────────────
   const gaps = [];
   if (missingSkills.length > 0) {
-    gaps.push(`Missing skills: ${missingSkills.slice(0,3).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}`);
+    gaps.push(
+      `Missing skills: ${missingSkills
+        .slice(0, 3)
+        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+        .join(", ")}`,
+    );
   }
   if (requiredExp > 0 && candidateExp < requiredExp) {
-    gaps.push(`Needs ${requiredExp - candidateExp} more year${requiredExp - candidateExp !== 1 ? "s" : ""} of experience`);
+    gaps.push(
+      `Needs ${requiredExp - candidateExp} more year${requiredExp - candidateExp !== 1 ? "s" : ""} of experience`,
+    );
   }
   if (gaps.length === 0 && totalScore < 80) {
     gaps.push("Profile needs more detail to fully evaluate");
@@ -134,13 +219,25 @@ function scoreResume(candidate, jobDescription) {
 
   // ── Breakdown for UI ─────────────────────────────────────
   const breakdown = [
-    { label: "Skills Match",      score: skillScore,  max: 50, color: "#4f46e5" },
-    { label: "Experience",        score: expScore,    max: 25, color: "#10b981" },
-    { label: "Role Alignment",    score: titleScore,  max: 15, color: "#f59e0b" },
-    { label: "Profile Completeness", score: softScore, max: 10, color: "#06b6d4" },
+    { label: "Skills Match", score: skillScore, max: 50, color: "#4f46e5" },
+    { label: "Experience", score: expScore, max: 25, color: "#10b981" },
+    { label: "Role Alignment", score: titleScore, max: 15, color: "#f59e0b" },
+    {
+      label: "Profile Completeness",
+      score: softScore,
+      max: 10,
+      color: "#06b6d4",
+    },
   ];
 
-  return { score: totalScore, strengths, gaps, summary, recommendation, breakdown };
+  return {
+    score: totalScore,
+    strengths,
+    gaps,
+    summary,
+    recommendation,
+    breakdown,
+  };
 }
 
 // ─── ROUTE: POST /api/ai/score-resume ──────────────────────
@@ -149,31 +246,48 @@ router.post("/score-resume", async (req, res) => {
     const { candidate_id, job_description } = req.body;
 
     if (!candidate_id || !job_description) {
-      return res.status(400).json({ success: false, message: "candidate_id and job_description required." });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "candidate_id and job_description required.",
+        });
     }
 
     if (job_description.trim().length < 30) {
-      return res.status(400).json({ success: false, message: "Job description is too short. Please paste the full JD." });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Job description is too short. Please paste the full JD.",
+        });
     }
 
     const [rows] = await db.query(
       "SELECT id, name, position, experience, skills FROM candidates WHERE id = ?",
-      [candidate_id]
+      [candidate_id],
     );
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Candidate not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "Candidate not found." });
     }
 
     const candidate = rows[0];
     const result = scoreResume(candidate, job_description);
 
     // Save score to DB
-    await db.query("UPDATE candidates SET ai_score = ? WHERE id = ?", [result.score, candidate_id]);
+    await db.query("UPDATE candidates SET ai_score = ? WHERE id = ?", [
+      result.score,
+      candidate_id,
+    ]);
 
     res.json({ success: true, candidate_name: candidate.name, ...result });
   } catch (err) {
     console.error("AI score error:", err.message);
-    res.status(500).json({ success: false, message: "Scoring failed: " + err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Scoring failed: " + err.message });
   }
 });
 
@@ -181,33 +295,69 @@ router.post("/score-resume", async (req, res) => {
 router.post("/generate-report", async (req, res) => {
   try {
     const { candidate_id } = req.body;
-    if (!candidate_id) return res.status(400).json({ success: false, message: "candidate_id required." });
+    if (!candidate_id)
+      return res
+        .status(400)
+        .json({ success: false, message: "candidate_id required." });
 
     // Fetch candidate + feedback
-    const [cRows] = await db.query("SELECT * FROM candidates WHERE id = ?", [candidate_id]);
-    if (!cRows.length) return res.status(404).json({ success: false, message: "Candidate not found." });
+    const [cRows] = await db.query("SELECT * FROM candidates WHERE id = ?", [
+      candidate_id,
+    ]);
+    if (!cRows.length)
+      return res
+        .status(404)
+        .json({ success: false, message: "Candidate not found." });
     const c = cRows[0];
 
     const [feedbacks] = await db.query(
       "SELECT * FROM feedback WHERE candidate_id = ? ORDER BY created_at DESC LIMIT 1",
-      [candidate_id]
+      [candidate_id],
     );
-    if (!feedbacks.length) return res.status(400).json({ success: false, message: "No feedback found for this candidate. Submit feedback first." });
+    if (!feedbacks.length)
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "No feedback found for this candidate. Submit feedback first.",
+        });
     const fb = feedbacks[0];
 
-    const tech  = fb.technical_score;
-    const comm  = fb.communication_score;
-    const prob  = fb.problem_solving_score;
+    const tech = fb.technical_score;
+    const comm = fb.communication_score;
+    const prob = fb.problem_solving_score;
     const overall = ((tech + comm + prob) / 3).toFixed(1);
-    const reco  = fb.recommendation;
+    const reco = fb.recommendation;
 
     // ── Rule-based GenAI report ──────────────────────────
-    const techLevel  = tech >= 8 ? "exceptional" : tech >= 6 ? "strong" : tech >= 4 ? "moderate" : "limited";
-    const commLevel  = comm >= 8 ? "excellent" : comm >= 6 ? "good" : comm >= 4 ? "adequate" : "needs improvement";
-    const probLevel  = prob >= 8 ? "outstanding" : prob >= 6 ? "solid" : prob >= 4 ? "satisfactory" : "weak";
+    const techLevel =
+      tech >= 8
+        ? "exceptional"
+        : tech >= 6
+          ? "strong"
+          : tech >= 4
+            ? "moderate"
+            : "limited";
+    const commLevel =
+      comm >= 8
+        ? "excellent"
+        : comm >= 6
+          ? "good"
+          : comm >= 4
+            ? "adequate"
+            : "needs improvement";
+    const probLevel =
+      prob >= 8
+        ? "outstanding"
+        : prob >= 6
+          ? "solid"
+          : prob >= 4
+            ? "satisfactory"
+            : "weak";
 
     const strengthsList = [];
-    const improvList    = [];
+    const improvList = [];
 
     if (tech >= 7) strengthsList.push("strong technical proficiency");
     else improvList.push("deepen technical knowledge");
@@ -215,7 +365,10 @@ router.post("/generate-report", async (req, res) => {
     else improvList.push("improve verbal communication clarity");
     if (prob >= 7) strengthsList.push("excellent analytical thinking");
     else improvList.push("practice structured problem solving");
-    if (c.experience >= 3) strengthsList.push(`${c.experience} years of relevant industry experience`);
+    if (c.experience >= 3)
+      strengthsList.push(
+        `${c.experience} years of relevant industry experience`,
+      );
 
     const strengthsText = strengthsList.length
       ? `The candidate demonstrated ${strengthsList.join(", ")}.`
@@ -227,9 +380,9 @@ router.post("/generate-report", async (req, res) => {
 
     const recoMap = {
       "Strong Hire": `Based on the evaluation, ${c.name} is highly recommended for immediate hiring. The overall performance was outstanding across all dimensions.`,
-      "Hire":        `${c.name} is a suitable candidate for this role. The performance meets the expected standards and a formal offer is recommended.`,
-      "Maybe":       `${c.name} shows potential but has some gaps. A second round of interviews or a probationary offer may be considered.`,
-      "No Hire":     `At this stage, ${c.name} does not meet the required benchmarks. The candidate may reapply after gaining more experience.`,
+      Hire: `${c.name} is a suitable candidate for this role. The performance meets the expected standards and a formal offer is recommended.`,
+      Maybe: `${c.name} shows potential but has some gaps. A second round of interviews or a probationary offer may be considered.`,
+      "No Hire": `At this stage, ${c.name} does not meet the required benchmarks. The candidate may reapply after gaining more experience.`,
     };
 
     const report = `INTERVIEW EVALUATION REPORT
@@ -237,7 +390,7 @@ router.post("/generate-report", async (req, res) => {
 Candidate   : ${c.name}
 Position    : ${c.position}
 Experience  : ${c.experience || 0} year(s)
-Date        : ${new Date().toLocaleDateString("en-IN", { day:"2-digit", month:"long", year:"numeric" })}
+Date        : ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
 
 SCORES
 ------
@@ -263,10 +416,18 @@ ${fb.remarks || "No additional remarks provided by the interviewer."}
 ---
 Report generated by InterviewPro AI Evaluation System`;
 
-    res.json({ success: true, report, candidate_name: c.name, overall_score: overall, recommendation: reco });
+    res.json({
+      success: true,
+      report,
+      candidate_name: c.name,
+      overall_score: overall,
+      recommendation: reco,
+    });
   } catch (err) {
     console.error("Report generation error:", err.message);
-    res.status(500).json({ success: false, message: "Report generation failed." });
+    res
+      .status(500)
+      .json({ success: false, message: "Report generation failed." });
   }
 });
 

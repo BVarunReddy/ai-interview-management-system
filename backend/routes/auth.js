@@ -15,16 +15,30 @@ router.post("/register", async (req, res) => {
 
     // Validation
     if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: "Name, email, and password are required." });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Name, email, and password are required.",
+        });
     }
     if (password.length < 6) {
-      return res.status(400).json({ success: false, message: "Password must be at least 6 characters." });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Password must be at least 6 characters.",
+        });
     }
 
     // Check duplicate email
-    const [existing] = await db.query("SELECT id FROM users WHERE email = ?", [email]);
+    const [existing] = await db.query("SELECT id FROM users WHERE email = ?", [
+      email,
+    ]);
     if (existing.length > 0) {
-      return res.status(409).json({ success: false, message: "Email already registered." });
+      return res
+        .status(409)
+        .json({ success: false, message: "Email already registered." });
     }
 
     // Hash password
@@ -33,7 +47,7 @@ router.post("/register", async (req, res) => {
     // Insert user
     const [result] = await db.query(
       "INSERT INTO users (name, email, password, role, department) VALUES (?, ?, ?, ?, ?)",
-      [name, email, hashedPassword, role, department || null]
+      [name, email, hashedPassword, role, department || null],
     );
 
     res.status(201).json({
@@ -43,7 +57,9 @@ router.post("/register", async (req, res) => {
     });
   } catch (err) {
     console.error("Register error:", err.message);
-    res.status(500).json({ success: false, message: "Server error. Please try again." });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error. Please try again." });
   }
 });
 
@@ -53,13 +69,19 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: "Email and password are required." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email and password are required." });
     }
 
     // Fetch user
-    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
     if (rows.length === 0) {
-      return res.status(401).json({ success: false, message: "Invalid email or password." });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid email or password." });
     }
 
     const user = rows[0];
@@ -67,14 +89,16 @@ router.post("/login", async (req, res) => {
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Invalid email or password." });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid email or password." });
     }
 
     // Generate JWT
     const token = jwt.sign(
       { id: user.id, name: user.name, email: user.email, role: user.role },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
+      { expiresIn: JWT_EXPIRES_IN },
     );
 
     res.json({
@@ -91,40 +115,52 @@ router.post("/login", async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err.message);
-    res.status(500).json({ success: false, message: "Server error. Please try again." });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error. Please try again." });
   }
 });
 
 // ─── GET PROFILE (protected) ───────────────────────────────
-router.get("/profile", require("../middleware/auth").authMiddleware, async (req, res) => {
-  try {
-    const [rows] = await db.query(
-      "SELECT id, name, email, role, phone, department, created_at FROM users WHERE id = ?",
-      [req.user.id]
-    );
-    if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found." });
+router.get(
+  "/profile",
+  require("../middleware/auth").authMiddleware,
+  async (req, res) => {
+    try {
+      const [rows] = await db.query(
+        "SELECT id, name, email, role, phone, department, created_at FROM users WHERE id = ?",
+        [req.user.id],
+      );
+      if (rows.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found." });
+      }
+      res.json({ success: true, user: rows[0] });
+    } catch (err) {
+      console.error("Profile error:", err.message);
+      res.status(500).json({ success: false, message: "Server error." });
     }
-    res.json({ success: true, user: rows[0] });
-  } catch (err) {
-    console.error("Profile error:", err.message);
-    res.status(500).json({ success: false, message: "Server error." });
-  }
-});
+  },
+);
 
 // ─── UPDATE PROFILE (protected) ────────────────────────────
-router.put("/profile", require("../middleware/auth").authMiddleware, async (req, res) => {
-  try {
-    const { name, phone, department } = req.body;
-    await db.query(
-      "UPDATE users SET name = ?, phone = ?, department = ? WHERE id = ?",
-      [name, phone || null, department || null, req.user.id]
-    );
-    res.json({ success: true, message: "Profile updated successfully." });
-  } catch (err) {
-    console.error("Update profile error:", err.message);
-    res.status(500).json({ success: false, message: "Server error." });
-  }
-});
+router.put(
+  "/profile",
+  require("../middleware/auth").authMiddleware,
+  async (req, res) => {
+    try {
+      const { name, phone, department } = req.body;
+      await db.query(
+        "UPDATE users SET name = ?, phone = ?, department = ? WHERE id = ?",
+        [name, phone || null, department || null, req.user.id],
+      );
+      res.json({ success: true, message: "Profile updated successfully." });
+    } catch (err) {
+      console.error("Update profile error:", err.message);
+      res.status(500).json({ success: false, message: "Server error." });
+    }
+  },
+);
 
 module.exports = router;

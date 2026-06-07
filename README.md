@@ -128,11 +128,6 @@ pip install scikit-learn pandas numpy matplotlib seaborn joblib
 ### Step 4 — Run the App
 Open `frontend/login.html` in browser
 
-**Demo Login:**
-- Email: `admin@interviewpro.com`
-- Password: `Admin@123`
-
----
 
 ## API Endpoints
 
@@ -161,4 +156,4 @@ Open `frontend/login.html` in browser
 
 ---
 
-*Built for Final Year Project — AI-Enhanced Interview Management System*
+
