@@ -15,22 +15,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       const o1 = document.createElement("option");
       o1.value = c.id;
       o1.textContent = `${c.name} — ${c.position}`;
-      sel1.appendChild(o1);
-      const o2 = o1.cloneNode(true);
-      sel2.appendChild(o2);
+      if (sel1) sel1.appendChild(o1);
+      if (sel2) {
+        const o2 = o1.cloneNode(true);
+        sel2.appendChild(o2);
+      }
     });
   }
 
   // Live overall score
   ["technical", "communication", "problem_solving"].forEach((id) => {
-    document.getElementById(id).addEventListener("input", updateOverall);
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", updateOverall);
   });
 
   loadFeedbackInsights();
 
-  document
-    .getElementById("feedbackForm")
-    .addEventListener("submit", async (e) => {
+  const form = document.getElementById("feedbackForm");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const btn = document.getElementById("submitBtn");
       btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Submitting...';
@@ -51,7 +54,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (res && res.ok) {
         Toast.success("Feedback submitted successfully!");
-        document.getElementById("feedbackForm").reset();
+        form.reset();
         document.getElementById("techVal").textContent = 5;
         document.getElementById("commVal").textContent = 5;
         document.getElementById("probVal").textContent = 5;
@@ -64,6 +67,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       btn.innerHTML = '<i class="fa fa-paper-plane"></i> Submit Feedback';
       btn.disabled = false;
     });
+  }
 });
 
 function updateOverall() {
@@ -117,7 +121,12 @@ async function loadFeedbackInsights() {
 
 // ── GenAI Report Generator ────────────────────────────────
 async function generateReport() {
-  const candidateId = document.getElementById("reportCandidateId").value;
+  const sel = document.getElementById("reportCandidateId");
+  if (!sel) {
+    Toast.warning("Report section not available.");
+    return;
+  }
+  const candidateId = sel.value;
   if (!candidateId) {
     Toast.warning("Please select a candidate.");
     return;
