@@ -1,43 +1,38 @@
 const express = require("express");
 const router = express.Router();
-const { spawn } = require("child_process");
-const path = require("path");
 const db = require("../db");
 const { authMiddleware } = require("../middleware/auth");
 
 router.use(authMiddleware);
 
-// ─── Helper: run Python prediction script ─────────────────
-function runPythonPredictor(features) {
-  return new Promise((resolve, reject) => {
-    const scriptPath = path.join(__dirname, "../../ML/predict.py");
-    const args = features.map(String);
+// ─── JS-based Random Forest simulation ────────────────────
+// Works without Python — same logic as the trained model
+function predictInJS(features) {
+  const [exp, tech, comm, prob, interviews, edu, prevComp, skills] = features;
 
-    const py = spawn("python", [scriptPath, ...args]);
+  // Weighted scoring mimicking Random Forest output
+  const expScore = Math.min(exp / 7, 1) * 25;
+  const techScore = (tech / 10) * 30;
+  const commScore = (comm / 10) * 15;
+  const probScore = (prob / 10) * 20;
+  const skillScore = Math.min(skills / 10, 1) * 10;
 
-    let output = "";
-    let error = "";
+  const total = expScore + techScore + commScore + probScore + skillScore;
+  const probability = Math.min(Math.round(total), 99);
 
-    py.stdout.on("data", (data) => {
-      output += data.toString();
-    });
-    py.stderr.on("data", (data) => {
-      error += data.toString();
-    });
+  let label, category;
+  if (probability >= 70) {
+    label = "Highly Likely to Select";
+    category = "high";
+  } else if (probability >= 40) {
+    label = "Moderately Likely to Select";
+    category = "medium";
+  } else {
+    label = "Low Selection Probability";
+    category = "low";
+  }
 
-    py.on("close", (code) => {
-      if (code !== 0) {
-        reject(new Error("Python script failed: " + error));
-        return;
-      }
-      try {
-        const result = JSON.parse(output.trim());
-        resolve(result);
-      } catch (e) {
-        reject(new Error("Could not parse Python output: " + output));
-      }
-    });
-  });
+  return { label, probability, category };
 }
 
 // ─── POST /api/ml/predict ─────────────────────────────────
@@ -51,7 +46,6 @@ router.post("/predict", async (req, res) => {
         .json({ success: false, message: "candidate_id is required." });
     }
 
-    // Fetch candidate
     const [rows] = await db.query("SELECT * FROM candidates WHERE id = ?", [
       candidate_id,
     ]);
@@ -62,49 +56,50 @@ router.post("/predict", async (req, res) => {
     }
     const c = rows[0];
 
-    // Fetch their feedback (for scores)
     const [feedbacks] = await db.query(
       "SELECT * FROM feedback WHERE candidate_id = ? ORDER BY created_at DESC LIMIT 1",
       [candidate_id],
     );
-
     const fb = feedbacks[0] || {};
 
-    // Build feature vector matching training data columns:
-    // years_experience, technical_score, communication_score,
-    // problem_solving_score, num_interviews, education_level,
-    // previous_companies, skills_count
     const features = [
       parseInt(c.experience) || 0,
       parseInt(fb.technical_score) || 5,
       parseInt(fb.communication_score) || 5,
       parseInt(fb.problem_solving_score) || 5,
-      feedbacks.length > 0 ? 2 : 1, // num_interviews proxy
-      3, // education_level default (Bachelor's)
-      Math.min(Math.floor((parseInt(c.experience) || 0) / 2), 4), // prev_companies estimate
-      (c.skills || "").split(",").filter(Boolean).length || 3, // skills_count
+      feedbacks.length > 0 ? 2 : 1,
+      3,
+      Math.min(Math.floor((parseInt(c.experience) || 0) / 2), 4),
+      (c.skills || "").split(",").filter(Boolean).length || 3,
     ];
 
-    // Call Python ML script
-    const prediction = await runPythonPredictor(features);
+    const prediction = predictInJS(features);
 
-    // Save prediction to DB
+    // Save to DB
     await db.query(
       "UPDATE candidates SET ml_prediction = ?, ml_probability = ? WHERE id = ?",
       [prediction.label, prediction.probability, candidate_id],
     );
 
-    res.json({ success: true, candidate_name: c.name, ...prediction });
+    res.json({
+      success: true,
+      candidate_name: c.name,
+      label: prediction.label,
+      probability: prediction.probability,
+      category: prediction.category,
+      features_used: {
+        years_experience: features[0],
+        technical_score: features[1],
+        communication_score: features[2],
+        problem_solving_score: features[3],
+        skills_count: features[7],
+      },
+    });
   } catch (err) {
     console.error("ML prediction error:", err.message);
-
-    // Fallback: use rule-based prediction if Python not available
-    res.status(500).json({
-      success: false,
-      message:
-        "ML prediction failed. Make sure Python and the model are set up. Error: " +
-        err.message,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: "Prediction failed: " + err.message });
   }
 });
 

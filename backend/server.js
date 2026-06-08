@@ -15,13 +15,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ─── API ROUTES ────────────────────────────────────────────
-app.use("/api/auth",          require("./routes/auth"));
-app.use("/api/candidates",    require("./routes/candidates"));
-app.use("/api/interviews",    require("./routes/interviews"));
-app.use("/api/feedback",      require("./routes/feedback"));
-app.use("/api/dashboard",     require("./routes/dashboard"));
-app.use("/api/ai",            require("./routes/ai"));
-app.use("/api/ml",            require("./routes/ml"));
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/candidates", require("./routes/candidates"));
+app.use("/api/interviews", require("./routes/interviews"));
+app.use("/api/feedback", require("./routes/feedback"));
+app.use("/api/dashboard", require("./routes/dashboard"));
+app.use("/api/ai", require("./routes/ai"));
+app.use("/api/ml", require("./routes/ml"));
 app.use("/api/notifications", require("./routes/notifications"));
 
 // ─── HEALTH CHECK ──────────────────────────────────────────
