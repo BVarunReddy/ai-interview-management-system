@@ -1,5 +1,4 @@
 // feedback.js
-const RENDER_URL = "https://ai-interview-management-system.onrender.com";
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (!Auth.requireAuth()) return;
@@ -136,7 +135,7 @@ async function generateReport() {
   btn.disabled = true;
 
   try {
-    const res = await fetch(`${RAILWAY_URL}/api/ai/generate-report`, {
+    const res = await fetch(`${API_BASE}/ai/generate-report`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

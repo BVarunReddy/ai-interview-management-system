@@ -1,113 +1,178 @@
-// ============================================================
-// api.js — Centralized API Client with JWT Auth
-// ============================================================
+// mlPredict.js
+let candidates = [];
+let predHistory = [];
 
-const API_BASE = "https://ai-interview-management-system.onrender.com/api";
+document.addEventListener("DOMContentLoaded", async () => {
+  if (!Auth.requireAuth()) return;
+  initUI("mlPredict.html", "");
 
-// ── Token helpers ─────────────────────────────────────────
-const Auth = {
-  getToken: () => localStorage.getItem("ats_token"),
-  getUser: () => JSON.parse(localStorage.getItem("ats_user") || "null"),
-  setSession: (token, user) => {
-    localStorage.setItem("ats_token", token);
-    localStorage.setItem("ats_user", JSON.stringify(user));
-  },
-  clearSession: () => {
-    localStorage.removeItem("ats_token");
-    localStorage.removeItem("ats_user");
-  },
-  isLoggedIn: () => !!localStorage.getItem("ats_token"),
-  requireAuth: () => {
-    if (!localStorage.getItem("ats_token")) {
-      window.location.href = "login.html";
-      return false;
+  const res = await API.getCandidates({ limit: 200 });
+  if (res && res.ok) {
+    candidates = res.data.candidates;
+    const sel = document.getElementById("candidateSelect");
+    if (sel) {
+      candidates.forEach((c) => {
+        const o = document.createElement("option");
+        o.value = c.id;
+        o.textContent = `${c.name} — ${c.position} (${c.experience || 0} yrs)`;
+        sel.appendChild(o);
+      });
     }
-    return true;
-  },
-};
+  }
 
-// ── Core fetch wrapper ────────────────────────────────────
-async function apiFetch(endpoint, options = {}) {
-  const token = Auth.getToken();
-  const headers = { "Content-Type": "application/json", ...options.headers };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const selEl = document.getElementById("candidateSelect");
+  if (selEl) {
+    selEl.addEventListener("change", function () {
+      const c = candidates.find((x) => x.id == this.value);
+      const preview = document.getElementById("candPreview");
+      if (!c || !preview) return;
+      const fExp = document.getElementById("fExp");
+      const fPos = document.getElementById("fPos");
+      const fSkills = document.getElementById("fSkills");
+      const fTech = document.getElementById("fTech");
+      const fComm = document.getElementById("fComm");
+      const fProb = document.getElementById("fProb");
+      if (fExp) fExp.textContent = `${c.experience || 0} years`;
+      if (fPos) fPos.textContent = c.position || "—";
+      if (fSkills)
+        fSkills.textContent =
+          (c.skills || "").split(",").filter(Boolean).length || "—";
+      if (fTech) fTech.textContent = "From latest feedback";
+      if (fComm) fComm.textContent = "From latest feedback";
+      if (fProb) fProb.textContent = "From latest feedback";
+      preview.style.display = "block";
+    });
+  }
 
-  // Don't set Content-Type for FormData (file uploads)
-  if (options.body instanceof FormData) delete headers["Content-Type"];
+  loadHistory();
+});
+
+async function runPrediction() {
+  const sel = document.getElementById("candidateSelect");
+  if (!sel) return;
+  const candidateId = sel.value;
+  if (!candidateId) {
+    Toast.warning("Please select a candidate.");
+    return;
+  }
+
+  const btn = document.getElementById("predictBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Predicting...';
+  }
+
+  const emptyResult = document.getElementById("emptyResult");
+  const predCard = document.getElementById("predCard");
+  const thinkingPanel = document.getElementById("thinkingPanel");
+
+  if (emptyResult) emptyResult.style.display = "none";
+  if (predCard) predCard.className = "pred-card";
+  if (thinkingPanel) thinkingPanel.style.display = "block";
 
   try {
-    const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+    const res = await fetch(`${API_BASE}/ml/predict`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Auth.getToken()}`,
+      },
+      body: JSON.stringify({ candidate_id: parseInt(candidateId) }),
+    });
     const data = await res.json();
 
-    // Token expired — redirect to login
-    if (res.status === 403) {
-      Auth.clearSession();
-      window.location.href = "login.html";
-      return null;
+    if (thinkingPanel) thinkingPanel.style.display = "none";
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-magic"></i> Run ML Prediction';
     }
 
-    return { ok: res.ok, status: res.status, data };
+    if (!data.success) {
+      Toast.error(data.message || "Prediction failed.");
+      if (emptyResult) emptyResult.style.display = "block";
+      return;
+    }
+
+    showResult(data);
+
+    const c = candidates.find((x) => x.id == candidateId);
+    predHistory.unshift({
+      name: c?.name || "Candidate",
+      ...data,
+      time: new Date(),
+    });
+    renderHistory();
+    Toast.success(`Prediction complete: ${data.label}`);
   } catch (err) {
-    console.error("API error:", err);
-    return {
-      ok: false,
-      data: { message: "Network error. Is the server running?" },
-    };
+    if (thinkingPanel) thinkingPanel.style.display = "none";
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-magic"></i> Run ML Prediction';
+    }
+    Toast.error("Server error: " + err.message);
+    if (emptyResult) emptyResult.style.display = "block";
   }
 }
 
-// ── API methods ───────────────────────────────────────────
-const API = {
-  // Auth
-  login: (body) =>
-    apiFetch("/auth/login", { method: "POST", body: JSON.stringify(body) }),
-  register: (body) =>
-    apiFetch("/auth/register", { method: "POST", body: JSON.stringify(body) }),
-  getProfile: () => apiFetch("/auth/profile"),
-  updateProfile: (body) =>
-    apiFetch("/auth/profile", { method: "PUT", body: JSON.stringify(body) }),
+function showResult(d) {
+  const card = document.getElementById("predCard");
+  if (!card) return;
+  card.className = `pred-card ${d.category} show`;
 
-  // Dashboard
-  getStats: () => apiFetch("/dashboard/stats"),
-  getActivity: () => apiFetch("/dashboard/activity"),
+  const emojis = { high: "🟢", medium: "🟡", low: "🔴" };
+  const emoji = document.getElementById("predEmoji");
+  const prob = document.getElementById("predProb");
+  const label = document.getElementById("predLabel");
+  const name = document.getElementById("predName");
+  const bar = document.getElementById("probBarFill");
 
-  // Candidates
-  getCandidates: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return apiFetch(`/candidates${qs ? "?" + qs : ""}`);
-  },
-  getCandidate: (id) => apiFetch(`/candidates/${id}`),
-  addCandidate: (fd) => apiFetch("/candidates", { method: "POST", body: fd }),
-  updateStatus: (id, status) =>
-    apiFetch(`/candidates/${id}/status`, {
-      method: "PUT",
-      body: JSON.stringify({ status }),
-    }),
-  deleteCandidate: (id) => apiFetch(`/candidates/${id}`, { method: "DELETE" }),
+  if (emoji) emoji.textContent = emojis[d.category] || "🎯";
+  if (prob) prob.textContent = `${d.probability}%`;
+  if (label) label.textContent = d.label;
+  if (name) name.textContent = d.candidate_name || "—";
 
-  // Interviews
-  getInterviews: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return apiFetch(`/interviews${qs ? "?" + qs : ""}`);
-  },
-  scheduleInterview: (body) =>
-    apiFetch("/interviews", { method: "POST", body: JSON.stringify(body) }),
-  updateInterviewStatus: (id, status) =>
-    apiFetch(`/interviews/${id}/status`, {
-      method: "PUT",
-      body: JSON.stringify({ status }),
-    }),
-  deleteInterview: (id) => apiFetch(`/interviews/${id}`, { method: "DELETE" }),
+  setTimeout(() => {
+    if (bar) bar.style.width = `${d.probability}%`;
+  }, 100);
+}
 
-  // Feedback
-  getFeedback: () => apiFetch("/feedback"),
-  submitFeedback: (body) =>
-    apiFetch("/feedback", { method: "POST", body: JSON.stringify(body) }),
+async function loadHistory() {
+  try {
+    const res = await fetch(`${API_BASE}/ml/predictions`, {
+      headers: { Authorization: `Bearer ${Auth.getToken()}` },
+    });
+    const data = await res.json();
+    if (data.success && data.predictions.length) {
+      predHistory = data.predictions.map((p) => ({
+        name: p.name,
+        label: p.ml_prediction,
+        probability: p.ml_probability,
+        category:
+          p.ml_probability >= 70
+            ? "high"
+            : p.ml_probability >= 40
+              ? "medium"
+              : "low",
+      }));
+      renderHistory();
+    }
+  } catch (e) {}
+}
 
-  // AI
-  scoreResume: (body) =>
-    apiFetch("/ai/score-resume", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-};
+function renderHistory() {
+  const el = document.getElementById("predHistory");
+  if (!el || !predHistory.length) return;
+  el.innerHTML = predHistory
+    .slice(0, 8)
+    .map(
+      (p) => `
+    <div class="pred-history-row">
+      <div>
+        <div style="font-weight:600">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${p.label || "—"}</div>
+      </div>
+      <span class="prob-pill ${p.category || "medium"}">${p.probability || 0}%</span>
+    </div>`,
+    )
+    .join("");
+}
