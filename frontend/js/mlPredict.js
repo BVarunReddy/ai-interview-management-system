@@ -72,7 +72,7 @@ async function runPrediction() {
 
   try {
     const res = await fetch(
-      `https://ai-interview-management-system-production.up.railway.app/api/ml/predict`,
+      `https://ai-interview-management-system.onrender.com`,
       {
         method: "POST",
         headers: {
