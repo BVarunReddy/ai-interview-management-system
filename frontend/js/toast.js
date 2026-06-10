@@ -181,7 +181,7 @@ function initUI(activePage, searchPlaceholder) {
 // ── Fetch notification count ──────────────────────────────
 async function fetchNotifCount() {
   try {
-    const res = await fetch("https://ai-interview-management-system-production.up.railway.app/api/notifications", {
+    const res = await fetch("https://ai-interview-management-system.onrender.com", {
       headers: { Authorization: `Bearer ${Auth.getToken()}` },
     });
     const data = await res.json();
