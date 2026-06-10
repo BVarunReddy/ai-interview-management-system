@@ -1,6 +1,5 @@
 // feedback.js
-const RAILWAY_URL =
-  "https://ai-interview-management-system-production.up.railway.app";
+const RENDER_URL ="https://ai-interview-management-system.onrender.com";
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (!Auth.requireAuth()) return;
