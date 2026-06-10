@@ -2,7 +2,7 @@
 // api.js — Centralized API Client with JWT Auth
 // ============================================================
 
-const API_BASE = "https://ai-interview-management-system.onrender.com";
+const API_BASE = "https://ai-interview-management-system.onrender.com/api";
 
 // ── Token helpers ─────────────────────────────────────────
 const Auth = {
