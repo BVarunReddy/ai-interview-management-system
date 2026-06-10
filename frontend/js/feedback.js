@@ -1,5 +1,5 @@
 // feedback.js
-const RENDER_URL ="https://ai-interview-management-system.onrender.com";
+const RENDER_URL = "https://ai-interview-management-system.onrender.com";
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (!Auth.requireAuth()) return;

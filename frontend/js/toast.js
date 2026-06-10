@@ -100,15 +100,10 @@ function buildNavbar(searchPlaceholder = "Search...") {
     .toUpperCase()
     .slice(0, 2);
   return `
-    ${
-      searchPlaceholder
-        ? `
-  <div class="search-wrap">
-    <i class="fa fa-search"></i>
-    <input type="text" id="globalSearch" placeholder="${searchPlaceholder}" />
-  </div>`
-        : `<div></div>`
-    }
+    <div class="search-wrap">
+      <i class="fa fa-search"></i>
+      <input type="text" id="globalSearch" placeholder="${searchPlaceholder}" />
+    </div>
     <div class="nav-right">
       <div class="relative">
         <button class="notif-btn" id="notifBtn">
@@ -181,9 +176,12 @@ function initUI(activePage, searchPlaceholder) {
 // ── Fetch notification count ──────────────────────────────
 async function fetchNotifCount() {
   try {
-    const res = await fetch("https://ai-interview-management-system.onrender.com", {
-      headers: { Authorization: `Bearer ${Auth.getToken()}` },
-    });
+    const res = await fetch(
+      "https://ai-interview-management-system.onrender.com/api/notifications",
+      {
+        headers: { Authorization: `Bearer ${Auth.getToken()}` },
+      },
+    );
     const data = await res.json();
     if (data.success) {
       const badge = document.getElementById("notifBadge");
@@ -202,9 +200,12 @@ async function fetchNotifCount() {
 // ── Load notifications into dropdown ─────────────────────
 async function loadNotifications() {
   try {
-    const res = await fetch("https://ai-interview-management-system-production.up.railway.app/api/notifications", {
-      headers: { Authorization: `Bearer ${Auth.getToken()}` },
-    });
+    const res = await fetch(
+      "https://ai-interview-management-system.onrender.com/api/notifications",
+      {
+        headers: { Authorization: `Bearer ${Auth.getToken()}` },
+      },
+    );
     const data = await res.json();
     const list = document.getElementById("notifList");
     if (!list) return;
@@ -260,10 +261,13 @@ async function loadNotifications() {
 // ── Mark one as read ──────────────────────────────────────
 async function markRead(id, el) {
   try {
-    await fetch(`https://ai-interview-management-system-production.up.railway.app/api/notifications/${id}/read`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${Auth.getToken()}` },
-    });
+    await fetch(
+      `https://ai-interview-management-system.onrender.com/api/notifications/${id}/read`,
+      {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${Auth.getToken()}` },
+      },
+    );
     el.classList.remove("unread");
     fetchNotifCount();
   } catch (e) {}
@@ -272,10 +276,13 @@ async function markRead(id, el) {
 // ── Clear all ─────────────────────────────────────────────
 async function clearAllNotifs() {
   try {
-    await fetch("https://ai-interview-management-system-production.up.railway.app/api/notifications/clear", {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${Auth.getToken()}` },
-    });
+    await fetch(
+      "https://ai-interview-management-system.onrender.com/api/notifications/clear",
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${Auth.getToken()}` },
+      },
+    );
     const list = document.getElementById("notifList");
     if (list)
       list.innerHTML = '<div class="notif-item">No notifications yet</div>';
