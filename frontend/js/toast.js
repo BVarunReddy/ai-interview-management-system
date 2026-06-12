@@ -143,6 +143,15 @@ function initUI(activePage, searchPlaceholder) {
   const sb = document.getElementById("sidebar");
   if (sb) sb.innerHTML = buildSidebar(activePage);
 
+  // Add mobile overlay if not exists
+  if (!document.getElementById("sidebarOverlay")) {
+    const overlay = document.createElement("div");
+    overlay.id = "sidebarOverlay";
+    overlay.className = "sidebar-overlay";
+    overlay.onclick = closeSidebar;
+    document.body.appendChild(overlay);
+  }
+
   const nb = document.getElementById("navbar");
   if (nb) nb.innerHTML = buildNavbar(searchPlaceholder);
 
@@ -366,4 +375,20 @@ function skeletonRows(cols = 5, rows = 5) {
           .join("")}</tr>`,
     )
     .join("");
+}
+
+// ── Mobile Sidebar ────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  if (!sidebar) return;
+  sidebar.classList.toggle("mobile-open");
+  if (overlay) overlay.classList.toggle("show");
+}
+
+function closeSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  if (sidebar) sidebar.classList.remove("mobile-open");
+  if (overlay) overlay.classList.remove("show");
 }
