@@ -1521,7 +1521,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 @media (max-width: 480px) {
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
   .search-wrap {
     display: none;
@@ -1535,4 +1535,70 @@ input[type="range"]::-webkit-slider-thumb {
   .pipeline-count {
     font-size: 18px;
   }
+}
+
+/* ============================================================
+   app.css PATCH — add these lines at the very end of app.css
+   ============================================================ */
+
+/* Fix: search-wrap has hard-coded width:360px which overflows
+   on Android. Make it flexible instead. */
+.search-wrap {
+  width: clamp(140px, 40vw, 360px);
+}
+
+/* Fix: @media(max-width:480px) sets .search-wrap { display:none }
+   which hides search entirely on small Android phones.
+   Override to keep it visible (just smaller). */
+@media (max-width: 480px) {
+  .search-wrap {
+    display: flex !important;
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+  }
+
+  /* Give stats a single column below 380px */
+  @media (max-width: 380px) {
+    .stats-grid {
+      grid-template-columns: 1fr !important;
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .hamburger {
+    display: flex;
+  }
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.1);
+  }
+  .main {
+    margin-left: 0 !important;
+  }
+  .navbar {
+    padding: 0 16px;
+    gap: 10px;
+  }
+}
+
+/* Fix: form inputs on iOS/Android zoom in when font-size < 16px */
+@media (max-width: 768px) {
+  .form-control,
+  select.form-control,
+  textarea.form-control,
+  .search-wrap input {
+    font-size: 16px;
+  }
+}
+
+/* Fix: tables need horizontal scroll on mobile */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }

@@ -100,6 +100,9 @@ function buildNavbar(searchPlaceholder = "Search...") {
     .toUpperCase()
     .slice(0, 2);
   return `
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">
+      <i class="fa fa-bars"></i>
+    </button>
     <div class="search-wrap">
       <i class="fa fa-search"></i>
       <input type="text" id="globalSearch" placeholder="${searchPlaceholder}" />
