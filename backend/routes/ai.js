@@ -5,7 +5,7 @@ const db = require("../db");
 
 router.use(authMiddleware);
 
-// ─── GROQ API HELPER ───────────────────────────────────────
+// ─── GROQ API ──────────────────────────────────────────────
 async function callGroq(prompt) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY not configured.");
@@ -26,12 +26,9 @@ async function callGroq(prompt) {
           {
             role: "system",
             content:
-              "You are an expert HR evaluator and recruitment specialist. Generate professional, detailed interview evaluation reports.",
+              "You are an expert HR evaluator. Generate professional interview evaluation reports in plain text only. Do NOT use markdown formatting like ** or ##. Use plain section headers followed by colons. Do not include placeholder text like [Insert Date] or [Insert Name].",
           },
-          {
-            role: "user",
-            content: prompt,
-          },
+          { role: "user", content: prompt },
         ],
       }),
     },
@@ -131,7 +128,6 @@ function scoreResume(candidate, jobDescription) {
   let requiredExp = 0;
   if (expMatches.length > 0)
     requiredExp = Math.min(...expMatches.map((m) => parseInt(m)));
-
   let expScore =
     requiredExp === 0
       ? 20
@@ -249,24 +245,24 @@ router.post("/score-resume", async (req, res) => {
   try {
     const { candidate_id, job_description } = req.body;
     if (!candidate_id || !job_description)
-      return res.status(400).json({
-        success: false,
-        message: "candidate_id and job_description required.",
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "candidate_id and job_description required.",
+        });
     if (job_description.trim().length < 30)
       return res
         .status(400)
-        .json({ success: false, message: "Job description is too short." });
-
+        .json({ success: false, message: "Job description too short." });
     const [rows] = await db.query(
       "SELECT id, name, position, experience, skills FROM candidates WHERE id = ?",
       [candidate_id],
     );
-    if (rows.length === 0)
+    if (!rows.length)
       return res
         .status(404)
         .json({ success: false, message: "Candidate not found." });
-
     const result = scoreResume(rows[0], job_description);
     await db.query("UPDATE candidates SET ai_score = ? WHERE id = ?", [
       result.score,
@@ -281,7 +277,7 @@ router.post("/score-resume", async (req, res) => {
   }
 });
 
-// ─── POST /api/ai/generate-report (GROQ LLM) ───────────────
+// ─── POST /api/ai/generate-report ──────────────────────────
 router.post("/generate-report", async (req, res) => {
   try {
     const { candidate_id } = req.body;
@@ -304,112 +300,120 @@ router.post("/generate-report", async (req, res) => {
       [candidate_id],
     );
     if (!feedbacks.length)
-      return res.status(400).json({
-        success: false,
-        message: "No feedback found. Submit feedback first.",
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "No feedback found. Submit feedback first.",
+        });
     const fb = feedbacks[0];
 
     const overall = (
       (fb.technical_score + fb.communication_score + fb.problem_solving_score) /
       3
     ).toFixed(1);
+    const today = new Date().toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
 
-    // ── Build prompt for Groq LLM ──────────────────────────
-    const prompt = `Generate a professional interview evaluation report for the following candidate:
+    const prompt = `Generate a professional interview evaluation report in plain text (no markdown, no ** symbols, no # symbols).
 
-      CANDIDATE INFORMATION:
-      - Name: ${c.name}
-      - Position Applied: ${c.position}
-      - Years of Experience: ${c.experience || 0}
-      - Skills: ${c.skills || "Not specified"}
+CANDIDATE: ${c.name}
+POSITION: ${c.position}
+EXPERIENCE: ${c.experience || 0} years
+SKILLS: ${c.skills || "Not specified"}
+INTERVIEW DATE: ${today}
 
-      INTERVIEW SCORES (out of 10):
-      - Technical Skills: ${fb.technical_score}/10
-      - Communication: ${fb.communication_score}/10
-      - Problem Solving: ${fb.problem_solving_score}/10
-      - Overall Score: ${overall}/10
+SCORES (out of 10):
+- Technical Skills: ${fb.technical_score}/10
+- Communication: ${fb.communication_score}/10
+- Problem Solving: ${fb.problem_solving_score}/10
+- Overall: ${overall}/10
 
-      INTERVIEWER RECOMMENDATION: ${fb.recommendation}
-      INTERVIEWER REMARKS: ${fb.remarks || "No remarks provided"}
+RECOMMENDATION: ${fb.recommendation}
+REMARKS: ${fb.remarks || "No remarks provided"}
 
-      Please generate a detailed, professional evaluation report that includes:
-      1. Executive Summary (2-3 sentences)
-      2. Technical Assessment
-      3. Communication & Soft Skills Assessment
-      4. Problem Solving Assessment
-      5. Strengths (3 bullet points)
-      6. Areas for Improvement (2-3 bullet points)
-      7. Final Recommendation with justification
+Write the report with these sections using plain text headers (no markdown):
+EXECUTIVE SUMMARY
+TECHNICAL ASSESSMENT
+COMMUNICATION AND SOFT SKILLS
+PROBLEM SOLVING ASSESSMENT
+STRENGTHS
+AREAS FOR IMPROVEMENT
+FINAL RECOMMENDATION
 
-      Format it as a clean professional report. Be specific, detailed and use the actual scores provided.`;
+Important rules:
+- No ** or * or # formatting
+- No placeholder text like [Insert Date] or [Insert Name]
+- Use the actual date: ${today}
+- Use the actual candidate name: ${c.name}
+- Keep it professional and specific to the scores given`;
 
     let report;
     try {
-      // Try Groq LLM first
       const llmResponse = await callGroq(prompt);
-      report = `INTERVIEW EVALUATION REPORT — AI Generated
-      ==========================================
-      Candidate   : ${c.name}
-      Position    : ${c.position}
-      Date        : ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
-      Overall Score: ${overall}/10
-      Recommendation: ${fb.recommendation}
+      // Clean any remaining markdown
+      const cleaned = llmResponse
+        .replace(/\*\*/g, "")
+        .replace(/\*/g, "")
+        .replace(/##/g, "")
+        .replace(/#/g, "")
+        .replace(/\[Insert.*?\]/g, "")
+        .trim();
 
-      Generated by Groq LLM (Llama 3)
-      ==========================================
+      report = `INTERVIEW EVALUATION REPORT — AI Generated (Powered by Groq LLM)
+==========================================
+Candidate     : ${c.name}
+Position      : ${c.position}
+Date          : ${today}
+Overall Score : ${overall}/10
+Recommendation: ${fb.recommendation}
+==========================================
 
-      ${llmResponse}
+${cleaned}
 
-      ---
-      Report generated by InterviewPro AI Evaluation System (Powered by Groq)`;
-          } catch (llmErr) {
-            console.error("Groq LLM failed, using fallback:", llmErr.message);
-            // Fallback to rule-based if Groq fails
-            const techLevel =
-              fb.technical_score >= 8
-                ? "exceptional"
-                : fb.technical_score >= 6
-                  ? "strong"
-                  : "moderate";
-            const commLevel =
-              fb.communication_score >= 8
-                ? "excellent"
-                : fb.communication_score >= 6
-                  ? "good"
-                  : "adequate";
-            const probLevel =
-              fb.problem_solving_score >= 8
-                ? "outstanding"
-                : fb.problem_solving_score >= 6
-                  ? "solid"
-                  : "satisfactory";
-            report = `INTERVIEW EVALUATION REPORT
-      ===============================
-      Candidate   : ${c.name}
-      Position    : ${c.position}
-      Experience  : ${c.experience || 0} year(s)
-      Date        : ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
+---
+Report generated by InterviewPro AI Evaluation System (Groq Llama 3.1)`;
+    } catch (llmErr) {
+      console.error("Groq LLM failed, using fallback:", llmErr.message);
+      const techLevel =
+        fb.technical_score >= 8
+          ? "exceptional"
+          : fb.technical_score >= 6
+            ? "strong"
+            : "moderate";
+      const commLevel =
+        fb.communication_score >= 8
+          ? "excellent"
+          : fb.communication_score >= 6
+            ? "good"
+            : "adequate";
+      const probLevel =
+        fb.problem_solving_score >= 8
+          ? "outstanding"
+          : fb.problem_solving_score >= 6
+            ? "solid"
+            : "satisfactory";
+      report = `INTERVIEW EVALUATION REPORT
+===============================
+Candidate   : ${c.name}
+Position    : ${c.position}
+Date        : ${today}
+Overall     : ${overall}/10
 
-      SCORES
-      ------
-      Technical Skills : ${fb.technical_score}/10 (${techLevel})
-      Communication    : ${fb.communication_score}/10 (${commLevel})
-      Problem Solving  : ${fb.problem_solving_score}/10 (${probLevel})
-      Overall Score    : ${overall}/10
+SCORES
+------
+Technical Skills : ${fb.technical_score}/10 (${techLevel})
+Communication    : ${fb.communication_score}/10 (${commLevel})
+Problem Solving  : ${fb.problem_solving_score}/10 (${probLevel})
 
-      EVALUATION SUMMARY
-      ------------------
-      The candidate demonstrated ${techLevel} technical skills and ${commLevel} communication abilities.
+RECOMMENDATION : ${fb.recommendation}
+REMARKS        : ${fb.remarks || "No remarks"}
 
-      RECOMMENDATION : ${fb.recommendation}
-
-      REMARKS
-      -------
-      ${fb.remarks || "No additional remarks."}
-
-      ---
-      Report generated by InterviewPro AI Evaluation System`;
+---
+Report generated by InterviewPro AI Evaluation System`;
     }
 
     res.json({
@@ -420,11 +424,10 @@ router.post("/generate-report", async (req, res) => {
       recommendation: fb.recommendation,
     });
   } catch (err) {
-    console.error("Report generation error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Report generation failed: " + err.message,
-    });
+    console.error("Report error:", err.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Report failed: " + err.message });
   }
 });
 
