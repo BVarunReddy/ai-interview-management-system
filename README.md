@@ -221,8 +221,8 @@ Expected output:
 ```
 ✅ MySQL Connected
 🚀 InterviewPro Server v2.0
-   Running on: http://localhost:3000
-   Environment: development
+   Running on port: 3000
+   Environment: production
 ```
 
 ### Open Frontend
