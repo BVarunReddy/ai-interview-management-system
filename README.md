@@ -169,21 +169,6 @@ cp .env.example .env
 
 Edit `.env` with your values:
 
-```env
-PORT=3000
-NODE_ENV=development
-
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=interview_system
-DB_PORT=3306
-
-JWT_SECRET=interviewpro_secret_2025
-JWT_EXPIRES_IN=7d
-
-GROQ_API_KEY=gsk_your_groq_key_here
-```
 
 ### Step 4 — Install Backend Dependencies
 
